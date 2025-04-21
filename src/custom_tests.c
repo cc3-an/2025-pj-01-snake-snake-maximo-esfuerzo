@@ -10,6 +10,8 @@
 
 /* Vean el archivo asserts.c, para conocer algunas funciones de assert */
 
+static char p = 'W';
+
 int greater_than_forty_two(int x) {
   return x > 42;
 }
@@ -109,21 +111,102 @@ bool test_is_vowel() {
 
 bool test_is_tail() {
   // TODO: Implementar esta funcion
+  printf("%s\n", " ");
+  printf("%s\n", "test_is_tail()");
+  printf("%s\n", "----------------------------------------");
+  //char p = '#';
+  bool passed = true;
+  
+  if(passed == is_tail(p)){
+    char f = (char)p;
+    //printf("%c", c);
+    printf("true: %c\n",  f);
+    //return true;
+  }else{
+    char f = (char)p;
+    printf("false: %c\n", f);
+    //return false;
+  }  
+
+  printf("%s\n", "paso el if");
+  printf("%s\n", "----------------------------------------");
+
   return true;
 }
 
 bool test_is_head() {
   // TODO: Implementar esta funcion
+  printf("%s\n", " ");
+  printf("%s\n", "test_is_head()");
+  printf("%s\n", "----------------------------------------");
+  //char p = '#';
+  bool passed = true;
+  
+  if(passed == is_head(p)){
+    char f = (char)p;
+    //printf("%c", c);
+    printf("true: %c\n",  f);
+    //return true;
+  }else{
+    char f = (char)p;
+    printf("false: %c\n", f);
+    //return false;
+  }  
+
+  printf("%s\n", "paso el if");
+  printf("%s\n", "----------------------------------------");
+
   return true;
 }
 
 bool test_is_snake() {
   // TODO: Implementar esta funcion
+  printf("%s\n", " ");
+  printf("%s\n", "test_is_snake()");
+  printf("%s\n", "----------------------------------------");
+  //char p = '#';
+  bool passed = true;
+  
+  if(passed == is_snake(p)){
+    char f = (char)p;
+    //printf("%c", c);
+    printf("true: %c\n",  f);
+    //return true;
+  }else{
+    char f = (char)p;
+    printf("false: %c\n", f);
+    //return false;
+  }  
+
+  printf("%s\n", "paso el if");
+  printf("%s\n", "----------------------------------------");
+
   return true;
 }
 
 bool test_body_to_tail() {
   // TODO: Implementar esta funcion
+
+  printf("%s\n", " ");
+  printf("%s\n", "test_body_to_tail()");
+  printf("%s\n", "----------------------------------------");
+  char f = 'd';
+  //bool passed = true;
+
+  if(f == body_to_tail(p)){
+    char f = (char)p;
+    //printf("%c", c);
+    printf("true: %c\n",  f);
+    //return true;
+  }else{
+    char f = (char)p;
+    printf("false: %c\n", f);
+    //return false;
+  }  
+
+  printf("%s\n", "paso el if");
+  printf("%s\n", "----------------------------------------");
+
   return true;
 }
 
