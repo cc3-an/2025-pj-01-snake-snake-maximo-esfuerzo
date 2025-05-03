@@ -353,17 +353,19 @@ static char next_square(game_state_t* state, unsigned int snum) {
   //Validamos que sean valores validos
   if(state != NULL || snum <= state->num_snakes){
     //Creamos variables para guardar los valores del head col,row,char
-    unsigned int shr = state->snakes[snum].head_row;
-    unsigned int shc = state->snakes[snum].head_col;
-    char h = get_board_at(state, shr, shc);
+    char h = get_board_at(state, state->snakes[snum].head_row, state->snakes[snum].head_col);
+    unsigned int shr = get_next_row(state->snakes[snum].head_row, h);
+    unsigned int shc = get_next_col(state->snakes[snum].head_col, h);
     //Validamos que efectivamente sea un head de una serpiente
-    if(is_head(h)){
+    if(shr >= state->num_rows || shc >= strlen(state->board[shr])){
       //obtenemos los valores del siguiente state del head de la serpiente
-      unsigned int i = get_next_col(shc, h);
-      unsigned int j = get_next_row(shr, h);
+      return '#';
+      //unsigned int i = get_next_col(shc, h);
+      //unsigned int j = get_next_row(shr, h);
       //Retornamos el char de la celda
-      return get_board_at(state, j, i);
     }
+    return get_board_at(state, shr, shc);
+
   }
   return '?';
 }
@@ -474,21 +476,25 @@ void update_state(game_state_t* state, int (*add_food)(game_state_t* state)) {
   for(unsigned int i = 0; i< state->num_snakes; i++){
 
       //Validamos si las serpiente esta viva
-      if(state->snakes->live){
-
+      //if(state->snakes->live){
+      if (!state->snakes[i].live) continue;
         //Creamos una valiable para ver el valor de la casilla a la que se va a mover
         char c_next = next_square(state, i);
 
         //Validamos si choca contra la pared o una serpiente
-        if (c_next == '#' || is_snake(c_next)) {
+        if (c_next == '#' || is_snake(c_next) && c_next != '*') {
           
           //Si choca se muere la serpiente, debemos asignar x al head y live pasa a ser falso
           set_board_at(state, state->snakes->head_row, state->snakes->head_col, 'x');
           state->snakes->live = false;
-          continue;
+          //continue;
         }
 
+    // Luego procesar movimiento para serpientes vivas
+    for (unsigned int i = 0; i < state->num_snakes; i++) {
+      if (!state->snakes[i].live) continue;
 
+      char next = next_square(state, i);
 
          // Si no ha muerto la serpiente se mueve el head
          update_head(state, i);
@@ -507,15 +513,125 @@ void update_state(game_state_t* state, int (*add_food)(game_state_t* state)) {
 
 
       }
-  }
+  
 
   return;
+  }
 }
 
 /* Tarea 5 */
 game_state_t* load_board(char* filename) {
   // TODO: Implementar esta funcion.
-  return NULL;
+
+  //Validamos que no sea nulo filename
+  if (filename == NULL) {
+    return NULL;
+  }
+
+  
+  FILE* file = fopen(filename, "r");
+  
+  if (file == NULL) {
+    return NULL;
+  }
+
+game_state_t* state = (game_state_t*)calloc(1, sizeof(game_state_t));
+if (state == NULL) {
+    fclose(file);
+    return NULL;
+}
+
+state->num_snakes = 0;
+state->snakes = NULL;
+state->num_rows = 0;
+state->board = NULL;
+
+// Primera pasada: contar filas y columnas
+unsigned int row_count = 0;
+unsigned int max_cols = 0;
+unsigned int current_cols = 0;
+int c;
+
+while ((c = getc(file)) != EOF) {
+    if (c == '\n') {
+        row_count++;
+        if (current_cols > max_cols) {
+            max_cols = current_cols;
+        }
+        current_cols = 0;
+    } else {
+        current_cols++;
+    }
+}
+
+// Asegurarse de contar la última fila si no termina con \n
+if (current_cols > 0) {
+    row_count++;
+    if (current_cols > max_cols) {
+        max_cols = current_cols;
+    }
+}
+
+if (row_count == 0 || max_cols == 0) {
+    fclose(file);
+    free(state);
+    return NULL;
+}
+
+// Asignar memoria para el tablero
+state->num_rows = row_count;
+state->board = (char**)calloc(row_count, sizeof(char*));
+if (state->board == NULL) {
+    fclose(file);
+    free(state);
+    return NULL;
+}
+
+// Segunda pasada: leer el contenido
+rewind(file);
+unsigned int row = 0;
+unsigned int col = 0;
+state->board[row] = (char*)malloc(max_cols + 1); // +1 para null terminator
+
+while ((c = getc(file)) != EOF && row < row_count) {
+    if (c == '\n') {
+        // Terminar la fila actual
+        state->board[row][col] = '\0';
+        row++;
+        col = 0;
+        if (row < row_count) {
+            state->board[row] = (char*)malloc(max_cols + 1);
+            if (state->board[row] == NULL) {
+                // Liberar memoria en caso de error
+                for (unsigned int i = 0; i < row; i++) {
+                    free(state->board[i]);
+                }
+                free(state->board);
+                free(state);
+                fclose(file);
+                return NULL;
+            }
+        }
+    } else {
+        if (col < max_cols) {
+            state->board[row][col] = (char)c;
+            col++;
+        }
+        // Ignorar caracteres más allá de max_cols
+    }
+}
+
+// Asegurarse de terminar la última fila
+if (row < row_count && col > 0) {
+    state->board[row][col] = '\0';
+}
+
+fclose(file);
+return state;
+
+
+
+//  return NULL;
 }
 
 
@@ -530,11 +646,104 @@ game_state_t* load_board(char* filename) {
 */
 static void find_head(game_state_t* state, unsigned int snum) {
   // TODO: Implementar esta funcion.
+      if (state == NULL || snum >= state->num_snakes) {
+        return;
+    }
+
+    snake_t* snake = &(state->snakes[snum]);
+    unsigned int row = snake->tail_row;
+    unsigned int col = snake->tail_col;
+    char current = get_board_at(state, row, col);
+
+    // Seguimos el cuerpo de la serpiente hasta encontrar la cabeza
+    while (!is_head(current)) {
+        if (!is_snake(current)) {
+            // Carácter inválido encontrado
+            snake->live = false;
+            return;
+        }
+
+        // Obtener siguiente posición
+        unsigned int next_row = get_next_row(row, current);
+        unsigned int next_col = get_next_col(col, current);
+
+        // Verificar límites del tablero
+        if (next_row >= state->num_rows || next_col >= strlen(state->board[next_row])) {
+            snake->live = false;
+            return;
+        }
+
+        row = next_row;
+        col = next_col;
+        current = get_board_at(state, row, col);
+    }
+
+    // Asignamos la posición de la cabeza
+    snake->head_row = row;
+    snake->head_col = col;
+
+
+
+
   return;
 }
 
 /* Tarea 6.2 */
 game_state_t* initialize_snakes(game_state_t* state) {
   // TODO: Implementar esta funcion.
-  return NULL;
+  if (state == NULL || state->board == NULL) {
+        return NULL;
+    }
+
+    // Primero contar el número de colas (una por serpiente)
+    unsigned int snake_count = 0;
+    for (unsigned int i = 0; i < state->num_rows; i++) {
+        if (state->board[i] == NULL) continue;
+        
+        for (unsigned int j = 0; state->board[i][j] != '\0'; j++) {
+            if (is_tail(state->board[i][j])) {
+                snake_count++;
+            }
+        }
+    }
+
+    if (snake_count == 0) {
+        state->num_snakes = 0;
+        state->snakes = NULL;
+        return state;
+    }
+
+    // Asignar memoria para las serpientes
+    state->num_snakes = snake_count;
+    state->snakes = (snake_t*)calloc(snake_count, sizeof(snake_t));
+    if (state->snakes == NULL) {
+        return NULL;
+    }
+
+    // Rellenar información inicial de las serpientes
+    unsigned int current_snake = 0;
+    for (unsigned int i = 0; i < state->num_rows; i++) {
+        if (state->board[i] == NULL) continue;
+        
+        for (unsigned int j = 0; state->board[i][j] != '\0'; j++) {
+            if (is_tail(state->board[i][j])) {
+                snake_t* snake = &(state->snakes[current_snake]);
+                snake->tail_row = i;
+                snake->tail_col = j;
+                snake->live = true;
+                
+                // Encontrar la cabeza correspondiente
+                find_head(state, current_snake);
+                
+                current_snake++;
+            }
+        }
+    }
+
+    return state;
+
+
+
+
+  //return NULL;
 }
